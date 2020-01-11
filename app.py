@@ -1,5 +1,10 @@
 import pandas
 
+import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import tree
+import matplotlib.pyplot as plt
+
 
 def get_first_name(full_name):
     try:
@@ -87,3 +92,29 @@ if __name__ == '__main__':
     # print(last_name_frame.value_counts()[:20])
     print(llll.value_counts()[:40])
 
+    # example of work with DecisionTree
+    # X = np.array([[1, 2], [3, 4], [5, 6]])
+    # y = np.array([0, 1, 0])
+    # clf = DecisionTreeClassifier()
+    # c_fit = clf.fit(X, y)
+    # tree.plot_tree(c_fit)
+    # plt.show()
+    # importances = clf.feature_importances_
+    # print(importances)
+
+    # *** Ctreate DecisionTree to TitanicSet ***
+    # get only 4 rows
+    dec_df = df[['Age', 'Fare', 'Pclass', 'Sex', 'Survived']].copy()
+    # Change Sex row to number
+    dec_df.loc[:, 'Sex'] = dec_df['Sex'].map({'female': 0, 'male': 1}).astype(int)
+    # Remove NaN values
+    dec_df = dec_df.dropna()
+    # Get target row
+    target_row = dec_df["Survived"]
+    del dec_df["Survived"]
+    clf = DecisionTreeClassifier(random_state=241)
+    clf.fit(dec_df, target_row)
+    # tree.plot_tree(c_fit)
+    # plt.show()
+    importances = clf.feature_importances_
+    print(importances)
