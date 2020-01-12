@@ -32,9 +32,11 @@ if __name__ == '__main__':
 
     # y_train =
     # np.asarray(scaled_df_train['c1'], dtype="|S6")  # scaled_df_train.iloc[:, [0]].astype(float)
-    X_train = StandardScaler().fit_transform(X_train)
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
     #  y_test = np.asarray(scaled_df_test['c1'], dtype="|S6")  # scaled_df_test.iloc[:, [0]].astype(float)
-    X_test = StandardScaler().fit_transform(X_test)
+    # IMPORTANT TO USE TRASFORM INSTAED OF FIT_TRANSFORM
+    X_test = scaler.transform(X_test)
 
     # clf = Perceptron(random_state=241)
     clf.fit(X_train, y_train)
