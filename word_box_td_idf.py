@@ -1,4 +1,7 @@
 import numpy as np
+# import pandas
+# import heapq
+# from scipy.sparse import csr_matrix
 from sklearn import datasets
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import KFold
@@ -28,8 +31,20 @@ if __name__ == '__main__':
 
     best_c = c13['C']
     # Continue withy best C patams
-    sv = SVC(C=100000, random_state=241, kernel='linear')
-    # ans = sv.fit(X, y)
-    # print(sv.coef_)
-    # feature_mapping = vectorizer.get_feature_names()
-    # print(feature_mapping[i])
+    cv = KFold(n_splits=5, shuffle=True, random_state=241)
+    clf = SVC(kernel='linear', random_state=241, C=best_c)
+    ans = clf.fit(X_vect, y)
+    # DONT WORK
+    # print(clf.coef_)
+    # coeffs = csr_matrix.toarray(clf.coef_)
+    # coeffs_list = coeffs.tolist()[0]
+    # inds = np.argpartition(coeffs, -10)[-10:]
+    # top10 = heapq.nlargest(10, range(len(coeffs_list)), coeffs_list.__getitem__)
+
+    coefs = abs(clf.coef_.todense().A1)
+    coefs = np.argsort(coefs)
+    top10 = coefs[-10:]
+
+    top10.sort()
+    words = [vectorizer.get_feature_names()[x] for x in top10]
+    print(words)
