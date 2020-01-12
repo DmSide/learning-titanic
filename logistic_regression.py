@@ -6,14 +6,14 @@ import numpy as np
 import pandas
 from sklearn.linear_model import LogisticRegression
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-import math
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# import math
 
 
 def sigmoid(x):
-    # return 1.0 / 1 +  + math.exp(-x)
-    return 1.0 / (1 + math.exp(-x))
+    # return 1.0 / 1 + math.exp(-x)
+    return 1.0 / (1 + np.exp(x))
 
 
 def distance(a, b):
@@ -23,12 +23,14 @@ def distance(a, b):
 def log_regression(X, y, k, w, C, epsilon, max_iter):
     w1, w2 = w
     for i in range(max_iter):
-        w1new = w1 + k * np.mean(y * X[:, 0] * (1 - (1. / (1 + np.exp(-y * (w1 * X[:, 0] + w2 * X[:, 1])))))) - k * C * w1
+        w1new = w1 + k * np.mean(
+            y * X[:, 0] * (1 - (1. / (1 + np.exp(-y * (w1 * X[:, 0] + w2 * X[:, 1])))))) - k * C * w1
         w2new = w2 + k * np.mean(
-            y * X[:, 1] * (1 - (1. / (1 + np.exp(-y * (w2 * X[:, 1] + w2 * X[:, 1])))))) - k * C * w2
+            y * X[:, 1] * (1 - (1. / (1 + np.exp(-y * (w1 * X[:, 0] + w2 * X[:, 1])))))) - k * C * w2
 
         if distance((w1new, w2new), (w1, w2)) < epsilon:
             break
+
         w1, w2 = w1new, w2new
 
     predictions = []
@@ -44,8 +46,12 @@ def log_regression(X, y, k, w, C, epsilon, max_iter):
 if __name__ == '__main__':
     df = pandas.read_csv('data-logistic.csv', header=None)
     print(df)
+
     y = df.values[:, :1].T[0]
     X = df.values[:, 1:]
+    #
+    # X = df[[1, 2]].as_matrix()
+    # y = df[0].as_matrix()
 
     # FOR PLOTS
     # sns.set_context("notebook", font_scale=1.1)
@@ -64,6 +70,6 @@ if __name__ == '__main__':
     p0 = log_regression(X, y, 0.1, [0.0, 0.0], 0, 0.00001, 10000)
     p1 = log_regression(X, y, 0.1, [0.0, 0.0], 10, 0.00001, 10000)
 
-    print(roc_auc_score(y, p0))
-    print(roc_auc_score(y, p1))
+    print(f'{roc_auc_score(y, p0):.3f}')
+    print(f'{roc_auc_score(y, p1):.3f}')  # 0.937
 
