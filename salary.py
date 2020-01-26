@@ -1,6 +1,8 @@
 import pandas
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction import DictVectorizer
+from scipy.sparse import hstack
+from sklearn.linear_model import Ridge
 
 
 if __name__ == '__main__':
@@ -15,19 +17,23 @@ if __name__ == '__main__':
         skiprows=1,
         nrows=10000,
         names=salary_names)
-    y = data_train['SalaryNormalized']
+    y_train = data_train['SalaryNormalized']
     del data_train['SalaryNormalized']
     del data_test['SalaryNormalized']
     print("Readed")
-    data_train['FullDescription'] = data_train['FullDescription'].replace('[^a-zA-Z0-9]', ' ', regex=True)
-    data_train['FullDescription'] = data_train['FullDescription'].to_string(na_rep='').lower()
-    data_test['FullDescription'] = data_test['FullDescription'].replace('[^a-zA-Z0-9]', ' ', regex=True)
-    data_test['FullDescription'] = data_test['FullDescription'].to_string(na_rep='').lower()
+    temp_data_train_full_description = data_train['FullDescription']
+    del data_train['FullDescription']
+    temp_data_train_full_description = temp_data_train_full_description.replace('[^a-zA-Z0-9]', ' ', regex=True)
+    temp_data_train_full_description = temp_data_train_full_description.str.lower()
+    temp_data_test_full_description = data_test['FullDescription']
+    del data_test['FullDescription']
+    temp_data_test_full_description = temp_data_test_full_description.replace('[^a-zA-Z0-9]', ' ', regex=True)
+    temp_data_test_full_description = temp_data_test_full_description.str.lower()
 
     print("FullDescription")
     vectorizer = TfidfVectorizer(min_df=5)
-    X_train_vec = vectorizer.fit_transform(data_train['FullDescription'])
-    X_test_vec = vectorizer.transform(data_test['FullDescription'])
+    X_train_vec = vectorizer.fit_transform(temp_data_train_full_description)
+    X_test_vec = vectorizer.transform(temp_data_test_full_description)
     print("fit FullDescription")
     # Work with 'LocationNormalized', 'ContractTime'
     data_train['LocationNormalized'].fillna('nan', inplace=True)
@@ -53,12 +59,15 @@ if __name__ == '__main__':
     # 4. Постройте прогнозы для двух примеров из файла salary-test-mini.csv.
     # Значения полученных прогнозов являются ответом на задание. Укажите их через пробел.
 
-    # X_for_train = hstack([X_train_vec, X_train_categ])
-    #
-    # X_for_test = hstack([X_test_vec, X_test_categ])
-    #
-    # ridge = Ridge(alpha=, random_state=)
-    #
-    # ridge.fit(X_for_train, y_train)
-    # ridge.predict(X_for_train, y_train)
+    X_for_train = hstack([X_train_vec, X_train_categ])
+
+    X_for_test = hstack([X_test_vec, X_test_categ])
+
+    ridge = Ridge(alpha=1, fit_intercept=False, solver='lsqr')
+
+    ridge.fit(X_for_train, y_train)
+    rp = ridge.predict(X_for_test)
+    print(rp)
+    print(f'{rp[0]:.2f}')
+    print(f'{rp[1]:.2f}')
     # Не забудьте округлить результаты и перевести их в str.
