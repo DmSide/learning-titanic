@@ -47,10 +47,72 @@
 # Данный нюанс является ограничением платформы Coursera. Мы работаем над тем, чтобы убрать это ограничение.
 
 import pandas
+from sklearn.metrics import accuracy_score, precision_score, \
+    recall_score, f1_score, roc_auc_score, precision_recall_curve
 
 if __name__ == '__main__':
     scores = pandas.read_csv('ecm_scores.csv')
-    classification = pandas.read_csv('ecm_classification.csv', header=['true', 'pred'])
-    TP = classification['true'] == classification['pred']
-    FP = classification['true'] == 1
-    a = 5
+    classification = pandas.read_csv('ecm_classification.csv')
+    TP = len(classification[(classification.true == 1) & (classification.pred == 1)])
+    FP = len(classification[(classification.true == 0) & (classification.pred == 1)])
+    FN = len(classification[(classification.true == 1) & (classification.pred == 0)])
+    TN = len(classification[(classification.true == 0) & (classification.pred == 0)])
+
+    # FP = confusion_matrix.sum(axis=0) - np.diag(confusion_matrix)
+    # FN = confusion_matrix.sum(axis=1) - np.diag(confusion_matrix)
+    # TP = np.diag(confusion_matrix)
+    # TN = confusion_matrix.values.sum() - (FP + FN + TP)
+
+    # Sensitivity, hit rate, recall, or true positive rate
+    TPR = TP / (TP + FN)
+    # Specificity or true negative rate
+    TNR = TN / (TN + FP)
+    # Precision or positive predictive value
+    PPV = TP / (TP + FP)
+    # Negative predictive value
+    NPV = TN / (TN + FN)
+    # Fall out or false positive rate
+    FPR = FP / (FP + TN)
+    # False negative rate
+    FNR = FN / (TP + FN)
+    # False discovery rate
+    FDR = FP / (TP + FP)
+
+    # Overall accuracy
+    ACC = (TP + TN) / (TP + FP + FN + TN)
+    print(TP, FP, FN, TN)
+
+    acc = accuracy_score(classification['true'], classification['pred'])
+    prec = precision_score(classification['true'], classification['pred'])
+
+    recall = recall_score(classification['true'], classification['pred'])
+    f1 = f1_score(classification['true'], classification['pred'])
+
+    print(acc, prec, recall, f1)
+
+    score_logreg = roc_auc_score(scores['true'],scores['score_logreg'])
+    score_svm = roc_auc_score(scores['true'], scores['score_svm'])
+    score_knn = roc_auc_score(scores['true'], scores['score_knn'])
+    score_tree = roc_auc_score(scores['true'], scores['score_tree'])
+
+    print(score_logreg, score_svm, score_knn, score_tree)
+    print(f'MAX: {max(score_logreg, score_svm, score_knn, score_tree)}')
+
+    # sklearn.metrics.precision_recall_curve returns (precision, recall, thresholds)
+    score_header_list = ['score_logreg', 'score_svm', 'score_knn', 'score_tree']
+    max_prcs = []
+    for score_header in score_header_list:
+        print(score_header)
+        prc = precision_recall_curve(scores['true'], scores[score_header])
+        max_prc = max(prc[0][(prc[1] >= 0.7).nonzero()[0]])
+        print(max_prc)
+        max_prcs.append(max_prc)
+
+    print(max(max_prcs))
+    # prc_logreg = precision_recall_curve(scores['true'], scores['score_logreg'])
+    # prc_svm = precision_recall_curve(scores['true'], scores['score_svm'])
+    # prc_knn = precision_recall_curve(scores['true'], scores['score_knn'])
+    # prc_tree = precision_recall_curve(scores['true'], scores['score_tree'])
+
+    a = 56
+    # (prc_logreg[1]  0.7).nonzero()[0]
