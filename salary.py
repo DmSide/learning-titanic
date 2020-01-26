@@ -10,30 +10,38 @@ if __name__ == '__main__':
         skiprows=1,
         nrows=10000,
         names=salary_names)
-    
+    data_test = pandas.read_csv(
+        'salary-test-mini.csv',
+        skiprows=1,
+        nrows=10000,
+        names=salary_names)
     y = data_train['SalaryNormalized']
     del data_train['SalaryNormalized']
+    del data_test['SalaryNormalized']
     print("Readed")
     data_train['FullDescription'] = data_train['FullDescription'].replace('[^a-zA-Z0-9]', ' ', regex=True)
     data_train['FullDescription'] = data_train['FullDescription'].to_string(na_rep='').lower()
+    data_test['FullDescription'] = data_test['FullDescription'].replace('[^a-zA-Z0-9]', ' ', regex=True)
+    data_test['FullDescription'] = data_test['FullDescription'].to_string(na_rep='').lower()
+
     print("FullDescription")
     vectorizer = TfidfVectorizer(min_df=5)
-    X_train_descr = vectorizer.fit_transform(data_train['FullDescription'])
+    X_train_vec = vectorizer.fit_transform(data_train['FullDescription'])
+    X_test_vec = vectorizer.transform(data_test['FullDescription'])
     print("fit FullDescription")
     # Work with 'LocationNormalized', 'ContractTime'
     data_train['LocationNormalized'].fillna('nan', inplace=True)
     data_train['ContractTime'].fillna('nan', inplace=True)
+
+    data_test['LocationNormalized'].fillna('nan', inplace=True)
+    data_test['ContractTime'].fillna('nan', inplace=True)
+
     print("ContractTime")
     enc = DictVectorizer()
-    X_train_category = enc.fit_transform(data_train[['LocationNormalized', 'ContractTime']].to_dict('records'))
+    X_train_categ = enc.fit_transform(data_train[['LocationNormalized', 'ContractTime']].to_dict('records'))
+    X_test_categ = enc.transform(data_test[['LocationNormalized', 'ContractTime']].to_dict('records'))
     print("fit ContractTime")
-    # data_test = pandas.read_csv('salary-test-mini.csv')
-    # data_test['LocationNormalized'].fillna('nan', inplace=True)
-    # data_test['ContractTime'].fillna('nan', inplace=True)
-    # data_test['FullDescription'] = data_test['FullDescription'].replace('[^a-zA-Z0-9]', ' ', regex=True)
-    # data_test['FullDescription'] = data_test['FullDescription'].to_string(na_rep='').lower()
-    # X_test_descr = vectorizer.transform(data_test['FullDescription'])
-    # X_test_categ = enc.transform(data_test[['LocationNormalized', 'ContractTime']].to_dict('records'))
+
     a = 3
 
     # Объедините все полученные признаки в одну матрицу "объекты-признаки".
