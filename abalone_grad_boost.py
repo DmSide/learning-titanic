@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score
 import pandas as pd
-from sklearn.model_selection import KFold, cross_val_score, cross_validate
+from sklearn.model_selection import KFold, cross_val_score
 
 if __name__ == '__main__':
     # read dataset
