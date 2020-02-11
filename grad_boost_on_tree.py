@@ -46,16 +46,34 @@ if __name__ == '__main__':
             verbose=True,
             random_state=241)
         gbc.fit(X=X_train, y=y_train)
-        staged_decision_train = gbc.staged_decision_function(X_train)
+        staged_decision_train = gbc.staged_decision_function(X_test)
         # staged_decision_test = gbc.staged_decision_function(X_test)
         # yy1 = sigmoid(np.array(list(staged_decision_train)))
         # yy2 = sigmoid(staged_decision_test)
-        test_loss = list()
+        test_loss = np.empty(250)
         for i, y_pred in enumerate(staged_decision_train):
             y_pred = 1.0 / (1.0 - np.exp(- y_pred))
-            test_loss.append([i + 1, log_loss(y_test, y_pred)])
-        test_loss = pd.DataFrame(test_loss, columns=['iter', 'loss'])
+            test_loss[i] = log_loss(y_test, y_pred)
+        print(test_loss.max())
+        if learning_rate == 0.2:
+            print('learning_rate == 0.2')
+            lr02_min = test_loss.min()
+            lr02_idxmin = test_loss.argmin()
+            print(lr02_min)
+            print(lr02_idxmin)
+            with open('/home/dima/lr_w5_z2_1_1.txt', 'w') as out:
+                out.write(f'overfitting')
+            with open('/home/dima/lr_w5_z2_2_1.txt', 'w') as out:
+                out.write(f'{lr02_min:.2f} {lr02_idxmin}')
 
+        print(test_loss.min())
+
+        # plt.figure()
+        # plt.plot(test_loss, 'r', linewidth=2)
+        # plt.show()
         # Извлечение значения минимального лосса
-        test_loss[test_loss.loss == test_loss.loss.min()]
+        # test_loss[test_loss.loss == test_loss.loss.min()]
+
+        # predict_proba
+        # sklearn.ensemble.RandomForestClassifier
     print(1)
