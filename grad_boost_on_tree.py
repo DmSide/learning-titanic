@@ -1,9 +1,10 @@
-from sklearn.ensemble import GradientBoostingRegressor, GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingRegressor, GradientBoostingClassifier, RandomForestClassifier
 from  sklearn.metrics import log_loss
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import numpy as np
+
 #
 # n_estimators
 # learning_rate
@@ -39,7 +40,8 @@ if __name__ == '__main__':
     # X = data.drop('Activity', axis=1).values
     # y = data.Activity.values
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.8, random_state=241)
-    for learning_rate in [1, 0.5, 0.3, 0.2, 0.1]:
+    # for learning_rate in [1, 0.5, 0.3, 0.2, 0.1]:
+    for learning_rate in [0.2]:
         gbc = GradientBoostingClassifier(
             learning_rate=learning_rate,
             n_estimators=250,
@@ -52,7 +54,7 @@ if __name__ == '__main__':
         # yy2 = sigmoid(staged_decision_test)
         test_loss = np.empty(250)
         for i, y_pred in enumerate(staged_decision_train):
-            y_pred = 1.0 / (1.0 - np.exp(- y_pred))
+            y_pred = 1.0 / (1.0 + np.exp(- y_pred))
             test_loss[i] = log_loss(y_test, y_pred)
         print(test_loss.max())
         if learning_rate == 0.2:
@@ -66,14 +68,16 @@ if __name__ == '__main__':
             with open('/home/dima/lr_w5_z2_2_1.txt', 'w') as out:
                 out.write(f'{lr02_min:.2f} {lr02_idxmin}')
 
-        print(test_loss.min())
+            rfc = RandomForestClassifier(random_state=241, n_estimators=lr02_idxmin)
+            rfc.fit(X=X_train, y=y_train)
+            rfc_pred = rfc.predict_proba(X_test)
+            ls_ans = log_loss(y_test, rfc_pred)
+            with open('/home/dima/lr_w5_z2_3_1.txt', 'w') as out:
+                out.write(f'{ls_ans:.2f}')
+        else:
+            plt.figure()
+            plt.plot(test_loss, 'r', linewidth=2)
+            plt.show()
 
-        # plt.figure()
-        # plt.plot(test_loss, 'r', linewidth=2)
-        # plt.show()
-        # Извлечение значения минимального лосса
-        # test_loss[test_loss.loss == test_loss.loss.min()]
 
-        # predict_proba
-        # sklearn.ensemble.RandomForestClassifier
     print(1)
