@@ -1,10 +1,13 @@
 import json
 import bz2
-from sklearn.ensemble import GradientBoostingRegressor, GradientBoostingClassifier, RandomForestClassifier
+import datetime
+import numpy as np
 import pandas as pd
+
+from sklearn.ensemble import GradientBoostingRegressor, GradientBoostingClassifier, RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LogisticRegression
-import numpy as np
+from sklearn.model_selection import KFold, cross_val_score
 
 
 def sigmoid(x):
@@ -40,12 +43,13 @@ def log_regression(X, y, k, w, C, epsilon, max_iter):
 
 
 if __name__ == '__main__':
-    dota_features = pd.read_csv("dota_features.csv")
+    dota_features = pd.read_csv("dota_features.csv", index_col="match_id")
     X_test = pd.read_csv("dota_features_test.csv")
-    dota_features.fillna(value=0, inplace=True)
-    X_test.fillna(value=0, inplace=True)
+
     # Chapter 1. Grad Boost
     # 1.1 Get full list of values with NaN/Null. What does it mean?
+    # dire_bottle_time, dire_courier_time
+    # It means there are no event with this name occurs
     # 1.2 Name of target variable row
     # radiant_win
     # 1.3 How long and what quality was on boost with 30 trees?
@@ -54,24 +58,38 @@ if __name__ == '__main__':
     # 1.4 Should we use more than 30 trees? How can we speed up the method?
 
     # Remove future values
-    del dota_features['duration']
-    del dota_features['tower_status_radiant']
-    del dota_features['tower_status_dire']
-    del dota_features['barracks_status_dire']
-    del dota_features['barracks_status_radiant']
+    dota_features.drop([
+        "duration",
+        "tower_status_radiant",
+        "tower_status_dire",
+        "barracks_status_radiant",
+        "barracks_status_dire",
+    ], axis=1, inplace=True)
+    count_na = len(dota_features) - dota_features.count()
+    count_na[count_na > 0].sort_values(ascending=False) / len(dota_features)
+    dota_features.fillna(value=0, inplace=True)
+    X_test.fillna(value=0, inplace=True)
 
     y_train = dota_features['radiant_win']
-    X_train = dota_features
-    del X_train['radiant_win']
+    X_train = dota_features.drop('radiant_win', axis=1)
+    cv = KFold(n_splits=5, shuffle=True, random_state=42)
 
-    gbc = GradientBoostingClassifier(
-        # learning_rate=learning_rate,
-        n_estimators=30,  # 250,
-        verbose=True,
-        random_state=241)
-    gbc.fit(X=X_train, y=y_train)
-    ans = gbc.predict(X=X_test)
+    scores = {}
+    for n_estimators in [10, 20, 30, 40, 50, 100, 150, 200, 250]:  # range(1, 250):
+        gbc = GradientBoostingClassifier(
+            # learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            verbose=True,
+            random_state=241)
+        start_time = datetime.datetime.now()
+        score = cross_val_score(gbc, X_train, y_train, cv=cv, scoring="roc_auc", n_jobs=-1).mean()
+        print(f"Score: {score:.3f}")
+        print(f"Time elapsed: {datetime.datetime.now() - start_time}")
+        scores[n_estimators] = score
+        # gbc.fit(X=X_train, y=y_train)
+        # ans = gbc.predict(X=X_test)
 
+    pd.Series(scores).plot()
     # 2. Logistic regression
     # 2.1 Value of log regression. What is faster: log regression or grad boost?
     # 2.2 What if we delete some rows?
