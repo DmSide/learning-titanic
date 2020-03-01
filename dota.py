@@ -3,44 +3,11 @@ import bz2
 import datetime
 import numpy as np
 import pandas as pd
-
+from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import GradientBoostingRegressor, GradientBoostingClassifier, RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold, cross_val_score
-
-
-def sigmoid(x):
-    # return 1.0 / 1 + math.exp(-x)
-    return 1.0 / (1 + np.exp(x))
-
-
-def distance(a, b):
-    return np.sqrt(np.square(a[0]-b[0]) + np.square((a[1]-b[1])))
-
-
-def log_regression(X, y, k, w, C, epsilon, max_iter):
-    w1, w2 = w
-    for i in range(max_iter):
-        w1new = w1 + k * np.mean(
-            y * X[:, 0] * (1 - (1. / (1 + np.exp(-y * (w1 * X[:, 0] + w2 * X[:, 1])))))) - k * C * w1
-        w2new = w2 + k * np.mean(
-            y * X[:, 1] * (1 - (1. / (1 + np.exp(-y * (w1 * X[:, 0] + w2 * X[:, 1])))))) - k * C * w2
-
-        if distance((w1new, w2new), (w1, w2)) < epsilon:
-            break
-
-        w1, w2 = w1new, w2new
-
-    predictions = []
-
-    for i in range(len(X)):
-        t1 = -w1 * X[i, 0] - w2 * X[i, 1]
-        s = sigmoid(t1)
-        predictions.append(s)
-
-    return predictions
-
 
 if __name__ == '__main__':
     dota_features = pd.read_csv("dota_features.csv", index_col="match_id")
@@ -74,7 +41,7 @@ if __name__ == '__main__':
     X_train = dota_features.drop('radiant_win', axis=1)
     cv = KFold(n_splits=5, shuffle=True, random_state=42)
 
-    scores = {}
+    grad_boost_scores = {}
     for n_estimators in [10, 20, 30, 40, 50, 100, 150, 200, 250]:  # range(1, 250):
         gbc = GradientBoostingClassifier(
             # learning_rate=learning_rate,
@@ -85,29 +52,46 @@ if __name__ == '__main__':
         score = cross_val_score(gbc, X_train, y_train, cv=cv, scoring="roc_auc", n_jobs=-1).mean()
         print(f"Score: {score:.3f}")
         print(f"Time elapsed: {datetime.datetime.now() - start_time}")
-        scores[n_estimators] = score
+        grad_boost_scores[n_estimators] = score
         # gbc.fit(X=X_train, y=y_train)
         # ans = gbc.predict(X=X_test)
 
-    pd.Series(scores).plot()
+    pd.Series(grad_boost_scores).plot()
     # 2. Logistic regression
     # 2.1 Value of log regression. What is faster: log regression or grad boost?
     # 2.2 What if we delete some rows?
     # 2.3 How many different categories of hero in data?
     # 2.4 What if we add "word bag"? Is it better?
     # 2.5 Min and Max predicted value
+    scaler = StandardScaler()
+    X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train), index=X_train.index, columns=X_train.columns)
 
-    logistic = LogisticRegression()
-    logistic.fit(X_train, y_train)
-    logistic.score(X_train, y_train)
-    print('Coefficient: \n', logistic.coef_)
-    print('Intercept: \n', logistic.intercept_)
-    print('R² Value: \n', logistic.score(X, y))
+    grad_boost_scores = {}
 
-    p0 = log_regression(X_train, y_train, 0.1, [0.0, 0.0], 0, 0.00001, 10000)
-    p1 = log_regression(X_train, y_train, 0.1, [0.0, 0.0], 10, 0.00001, 10000)
+    for C in [0.001, 0.01, 0.1, 1, 10, 100, 1000]:
+        print(f"C={C}")
+        model = LogisticRegression(C=C, random_state=42)
 
-    print(f'{roc_auc_score(y, p0):.3f}')
-    print(f'{roc_auc_score(y, p1):.3f}')  # 0.937
-    
+        start_time = datetime.datetime.now()
+        score = cross_val_score(model, X_train_scaled, y_train, cv=cv, scoring="roc_auc", n_jobs=-1).mean()
+        print(f"Score: {score:.3f}")
+        print(f"Time elapsed: {datetime.datetime.now() - start_time}")
+
+        grad_boost_scores[C] = score
+        print()
+
+    grad_boost_scores = pd.Series(grad_boost_scores)
+    grad_boost_scores.plot()
+
+    best_log_score = grad_boost_scores.sort_values(ascending=False).head(1)
+    best_C = best_log_score.index[0]
+    best_score = best_log_score.values[0]
+
+    r_hero_columns = [f"r{i}_hero" for i in range(1, 6)]
+    f_hero_columns = [f"d{i}_hero" for i in range(1, 6)]
+    hero_columns = r_hero_columns + f_hero_columns
+    unique_heroes = np.unique(X_train[hero_columns].values.ravel())
+    N = max(unique_heroes)
+
+    print(f"Unique_heroes {N}")
     print('Done')
